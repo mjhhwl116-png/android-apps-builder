@@ -3,17 +3,18 @@ name: Build All APKs
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
@@ -31,9 +32,7 @@ jobs:
 
     - name: Find and Build Apps
       run: |
-        # الكود راح يبحث عن أي مجلد داخله buildozer.spec ويبنيه تلقائياً
         cd extracted_apps
-        # إذا كانت التطبيقات بداخل مجلدات فرعية داخل الـ zip، سننتقل لكل مجلد ونشغل بيلدوزر
         for dir in */; do
           if [ -d "$dir" ]; then
             echo "Building app in $dir"
