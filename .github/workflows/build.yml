@@ -49,5 +49,5 @@ jobs:
       with:
         name: my-built-apks
         path: |
-          extracted_apps/*/bin/*.apk
-          bin/*.apk
+          **/bin/*.apk
+          *.apk
