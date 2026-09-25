@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APKs
 
 on:
   push:
@@ -25,27 +25,41 @@ jobs:
         pip install --upgrade pip
         pip install buildozer cython==0.29.36
 
-    - name: Prepare Project Workspace
+    - name: Build All Apps Directly
       run: |
-        mkdir -p my_app
-        unzip -o app_project.zip -d my_app/ || true
-        cd my_app
-        if [ ! -f "buildozer.spec" ]; then
-          buildozer init
-          sed -i 's/# title = My Application/title = MyPythonApp/' buildozer.spec
-          sed -i 's/# package.name = myapp/package.name = mypythonapp/' buildozer.spec
-          sed -i 's/# package.domain = org.test/package.domain = org.ayman/' buildozer.spec
-          sed -i 's/# source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,jpg,kv,atlas,json/' buildozer.spec
-          sed -i 's/# source.main = main.py/source.main = parent_app.py/' buildozer.spec
-        fi
+        mkdir -p all_apps_output
+        
+        for app_file in child_app.py parent_app.py key_generator.py; do
+          if [ -f "$app_file" ]; then
+            echo "=================================="
+            echo "Building APK for: $app_file"
+            echo "=================================="
+            
+            app_dir="app_${app_file%.py}"
+            mkdir -p "$app_dir"
+            
+            cp "$app_file" "$app_dir/main.py"
+            [ -f "serviceAccountKey.json" ] && cp "serviceAccountKey.json" "$app_dir/"
+            
+            cd "$app_dir"
+            
+            buildozer init
+            sed -i "s/# title = My Application/title = ${app_file%.py}/" buildozer.spec
+            sed -i "s/# package.name = myapp/package.name = ${app_file%.py}/" buildozer.spec
+            sed -i 's/# package.domain = org.test/package.domain = org.ayman/' buildozer.spec
+            sed -i 's/# source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,jpg,kv,atlas,json/' buildozer.spec
+            
+            yes | buildozer -v android debug
+            
+            mkdir -p ../all_apps_output
+            cp bin/*.apk ../all_apps_output/${app_file%.py}.apk || true
+            
+            cd ..
+          fi
+        done
 
-    - name: Build with Buildozer
-      run: |
-        cd my_app
-        buildozer -v android debug
-
-    - name: Upload APK Artifact
+    - name: Upload All APKs Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: my-app-apk
-        path: my_app/bin/*.apk
+        name: all-my-apks
+        path: all_apps_output/*.apk
